@@ -4,8 +4,8 @@ import {
   getContext,
   type CanvasFactory,
   type FontSpec,
-} from "../raster";
-import type { Alphabet, AsciiFrame } from "../types";
+} from "../raster.js";
+import type { Alphabet, AsciiFrame } from "../types.js";
 
 export interface AtlasOptions {
   /**

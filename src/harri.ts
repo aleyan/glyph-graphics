@@ -1,7 +1,7 @@
-import { buildAlphabet, type BuildAlphabetOptions } from "./alphabet";
-import { computeGrid, type ConvertOptions } from "./convert";
-import { sampleFrame } from "./sample";
-import type { Alphabet, AsciiFrame, Frame, SamplingLayout } from "./types";
+import { buildAlphabet, type BuildAlphabetOptions } from "./alphabet.js";
+import { computeGrid, type ConvertOptions } from "./convert.js";
+import { sampleFrame } from "./sample.js";
+import type { Alphabet, AsciiFrame, Frame, SamplingLayout } from "./types.js";
 
 /** Alex Harri Jónsson's published reference cell dimensions. */
 export const ALEX_HARRI_CELL = Object.freeze({ width: 48, height: 64 });
@@ -70,9 +70,16 @@ export function buildAlexHarriAlphabet(
 export type AlexHarriOptions = Omit<ConvertOptions, "matcher">;
 
 export interface AlexHarriAlgorithm {
+  /** Stable machine-readable algorithm identifier. */
   readonly id: "alex-harri";
+  /** Human-readable algorithm name. */
   readonly label: string;
+  /** Short explanation suitable for a selector or inspector. */
   readonly description: string;
+  /**
+   * Converts one RGBA frame using an alphabet measured with the exact published
+   * Harri geometry.
+   */
   convert(
     frame: Frame,
     alphabet: Alphabet,

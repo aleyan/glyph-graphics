@@ -1,14 +1,20 @@
-import { unitDiskSamples } from "./layout";
-import { lightness } from "./raster";
-import type { Frame, SamplingLayout } from "./types";
+import { unitDiskSamples } from "./layout.js";
+import { lightness } from "./raster.js";
+import type { Frame, SamplingLayout } from "./types.js";
 
 /** Where the character grid sits within a frame, in pixels. */
 export interface GridGeometry {
+  /** Number of character cells across the output. */
   cols: number;
+  /** Number of character cells down the output. */
   rows: number;
+  /** Width of each source-image cell in pixels. */
   cellWidth: number;
+  /** Height of each source-image cell in pixels. */
   cellHeight: number;
+  /** Source x coordinate of the grid's left edge. */
   originX: number;
+  /** Source y coordinate of the grid's top edge. */
   originY: number;
 }
 
@@ -38,6 +44,7 @@ export interface SampleResult {
   vectors: Float32Array;
   /** Row-major RGB triplets, present only when `color` was requested. */
   colors?: Uint8Array;
+  /** Shape-vector values per cell; equal to the layout's internal-point count. */
   dimensions: number;
 }
 

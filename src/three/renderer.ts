@@ -5,9 +5,9 @@ import {
   packGlyphIndices,
   type AtlasOptions,
   type GlyphAtlas,
-} from "./atlas";
-import { FRAGMENT_SHADER, VERTEX_SHADER } from "./shaders";
-import type { Alphabet, AsciiFrame } from "../types";
+} from "./atlas.js";
+import { FRAGMENT_SHADER, VERTEX_SHADER } from "./shaders.js";
+import type { Alphabet, AsciiFrame } from "../types.js";
 
 function parseColor(color: THREE.ColorRepresentation): THREE.Vector3 {
   const c = new THREE.Color(color);
@@ -118,14 +118,17 @@ export class AsciiTilemap {
     (this.material.uniforms.uGridSize!.value as THREE.Vector2).set(cols, rows);
   }
 
+  /** Changes the paper color without rebuilding the tilemap. */
   setBackground(color: THREE.ColorRepresentation): void {
     (this.material.uniforms.uBackground!.value as THREE.Vector3).copy(parseColor(color));
   }
 
+  /** Changes the fallback ink color used when per-cell color is unavailable or disabled. */
   setInk(color: THREE.ColorRepresentation): void {
     (this.material.uniforms.uInk!.value as THREE.Vector3).copy(parseColor(color));
   }
 
+  /** Enables or disables tinting glyphs with the frame's per-cell colors. */
   setUseColor(useColor: boolean): void {
     this.material.uniforms.uUseColor!.value = useColor ? 1 : 0;
   }

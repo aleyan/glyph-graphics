@@ -1,38 +1,42 @@
 # glyph-graphics
 
-A focused TypeScript implementation of Alex Harri Jónsson's shape-aware ASCII
-renderer, with an optional Three.js tilemap renderer.
+Shape-aware image-to-ASCII conversion, with an optional Three.js tilemap
+renderer.
 
-Instead of ordering characters by darkness, the Harri algorithm measures the
-ink in six regions of each glyph and compares that shape vector with the same
-six regions in an image cell. Ten external samples provide edge context for
-directional contrast. Diagonals, curves, and asymmetric glyphs therefore remain
-meaningful instead of collapsing into a brightness ramp.
+Most ASCII converters order characters only by darkness. Alex Harri Jónsson's
+algorithm instead measures the ink in six regions of each glyph and compares
+that shape with the same regions in an image cell. Ten neighbouring samples add
+edge context. Diagonals, curves, and asymmetric glyphs can therefore survive
+conversion instead of collapsing into a brightness ramp.
 
-The alternate algorithms, preprocessing experiments, evaluation framework,
-fixture images, debug frontend, and generated reports live in the sibling
-`glyph-graphics-experiments` repository.
+This package contains the focused, reusable runtime: the Harri converter,
+alphabet tools, and optional Three.js renderer. Alternate algorithms,
+preprocessing experiments, evaluation tools, fixture images, and debug
+frontends belong in
+[glyph-graphics-experiments](https://github.com/aleyan/glyph-graphics-experiments).
 
 ## Install
 
 ```bash
-bun add glyph-graphics
+npm install glyph-graphics
 ```
 
-Three.js is not installed by the core package. Add it only when using the
-renderer:
+The package includes ESM, CommonJS, and TypeScript declarations and supports
+Node.js 20+, Bun, and modern browsers.
+
+Three.js is an optional peer. Install it only if you use
+`glyph-graphics/three`:
 
 ```bash
-bun add three
+npm install three
+npm install --save-dev @types/three
 ```
 
-The root import has no runtime dependency on Three.js. The adapter is isolated
-behind `glyph-graphics/three`, and `three` is declared as an optional peer.
+The root `glyph-graphics` import never loads Three.js.
 
-## Convert an image
+## Quick start
 
-`buildAlexHarriAlphabet` measures a font using the published 48×64 cell, six
-internal samples, ten external samples, and 13.5-pixel sample radius.
+Measure a glyph alphabet once, then use it for every image or video frame:
 
 ```ts
 import {
@@ -45,10 +49,11 @@ import {
 await document.fonts.load("64px 'Fira Code'");
 
 const alphabet = buildAlexHarriAlphabet({
-  font: { family: "Fira Code", size: 64 },
+  font: { family: "Fira Code, monospace", size: 64 },
   chars: charsets.SHAPE_ASCII,
 });
 
+// `image` is a decoded HTMLImageElement, ImageBitmap, canvas, or video frame.
 const canvas = document.createElement("canvas");
 canvas.width = image.width;
 canvas.height = image.height;
@@ -67,14 +72,71 @@ const ascii = alexHarriAlgorithm.convert(source, alphabet, {
 console.log(toText(ascii));
 ```
 
-The supplied alphabet must contain fewer than 50 unique printable ASCII
-characters. `charsets.SHAPE_ASCII` is a portable 47-character default made only
-from letters, numbers, punctuation, and symbols—no box drawing, block, Braille,
-or other specialty drawing characters.
+`charsets.SHAPE_ASCII` is a portable 47-character palette containing only
+printable ASCII letters, numbers, punctuation, and symbols. The exact Harri
+converter accepts at most 49 unique printable ASCII candidates and rejects box
+drawing, block, Braille, and other non-ASCII drawing characters.
 
-Input may be an `ImageData` object, a decoded RGBA buffer with the same shape,
-or a WebGL readback. Use `flipY: true` for bottom-up pixel buffers. Set `rows`
-for an exact output grid or omit it to preserve the image and glyph aspects.
+Input can be an `ImageData` object, a decoded RGBA buffer with the same shape,
+or a WebGL readback. Use `flipY: true` for bottom-up pixel buffers.
+
+## Exact Harri API
+
+### `buildAlexHarriAlphabet(options)`
+
+Measures the supplied characters using the published 48×64 cell, six internal
+sampling regions, ten external sampling positions, and 13.5-pixel sampling
+radius.
+
+| Option | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `font` | `{ family: string; size: number; style?: string }` | required | CSS font used for measurement |
+| `chars` | `string \| string[]` | required | Glyph candidates to measure |
+| `canvas` | `(width, height) => CanvasLike` | host canvas | Canvas implementation for browsers or servers |
+| `supersample` | `number` | `2` | Measurement scale; values above 1 stabilize fine strokes |
+| `pickMostDistinct` | `number` | all | Keep a smaller, well-separated subset |
+| `glyphScale` | `number` | `0.97` | Glyph size relative to the font size |
+| `baseline` | `number` | `0.525` | Baseline as a fraction of cell height |
+| `blur` | `number` | `0` | Gaussian blur radius before measurement |
+
+The result is an `Alphabet`. It records the characters, normalized shape
+vectors, sampling layout, cell size, and font shorthand. An alphabet must be
+measured with the exact Harri geometry to be passed to `alexHarriAlgorithm`.
+
+### `alexHarriAlgorithm.convert(frame, alphabet, options?)`
+
+| Option | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `cols` | `number` | derived | Output columns |
+| `rows` | `number` | aspect-preserving | Output rows; set both dimensions for an exact grid |
+| `quality` | `number` | `5` | Taps per sampling circle; 3–9 suits most images |
+| `globalCrunch` | `number` | `1` | Within-cell contrast exponent; 1 disables it |
+| `directionalCrunch` | `number` | `1` | Edge-context contrast exponent; 1 disables it |
+| `flipY` | `boolean` | `false` | Read a bottom-up pixel buffer |
+| `color` | `boolean` | `false` | Include average RGB per output cell |
+| `exclude` | `string` | `""` | Candidate characters to suppress |
+
+The `Frame` input and `AsciiFrame` output are deliberately small structural
+interfaces:
+
+```ts
+interface Frame {
+  data: Uint8ClampedArray | Uint8Array; // row-major RGBA
+  width: number;
+  height: number;
+}
+
+interface AsciiFrame {
+  cols: number;
+  rows: number;
+  chars: string[];       // row-major, cols * rows
+  colors?: Uint8Array;   // optional row-major RGB triplets
+}
+```
+
+When `rows` is omitted, the converter derives it from the source dimensions and
+the measured glyph aspect ratio so glyphs are not stretched. `toText(frame)`
+joins the character grid with newlines.
 
 ### Headless font measurement
 
@@ -93,10 +155,13 @@ const alphabet = buildAlexHarriAlphabet({
 });
 ```
 
+Canvas packages are not runtime dependencies; choose and install the one that
+fits your environment.
+
 ### Reuse and serialization
 
-Alphabet measurement is the expensive part. Build it once and reuse it for
-still images or every frame of a video. Alphabets are plain serializable data:
+Alphabet measurement is the expensive step. Build an alphabet once and reuse
+it for still images or every frame of a video. It can also be stored as JSON:
 
 ```ts
 import {
@@ -104,14 +169,14 @@ import {
   serializeAlphabet,
 } from "glyph-graphics";
 
-const saved = serializeAlphabet(alphabet);
-const restored = deserializeAlphabet(saved);
+const json = JSON.stringify(serializeAlphabet(alphabet));
+const restored = deserializeAlphabet(JSON.parse(json));
 ```
 
-## Render with Three.js
+## Three.js renderer
 
-The Three.js adapter packs every glyph into an atlas and renders the entire
-ASCII grid on one textured quad:
+`glyph-graphics/three` packs every measured glyph into an atlas and renders the
+whole ASCII grid on one textured quad:
 
 ```ts
 import { AsciiTilemap } from "glyph-graphics/three";
@@ -126,55 +191,65 @@ scene.add(tilemap.mesh);
 tilemap.update(ascii);
 renderer.render(scene, camera);
 
-// Later:
 tilemap.setBackground(0x101014);
 tilemap.setInk(0xf5f1e8);
 tilemap.setUseColor(false);
 
-// On teardown:
+// Release the geometry, material, and textures when finished.
 tilemap.dispose();
 ```
 
-Importing `glyph-graphics/three` exposes:
+The public `AsciiTilemap` interface is:
 
-| Export | Purpose |
+| Member | Meaning |
 | --- | --- |
-| `AsciiTilemap` | One-quad renderer for an `AsciiFrame` |
-| `buildGlyphAtlas` | Rasterize an alphabet into an atlas |
-| `packGlyphIndices` | Encode per-cell glyph indices |
-| `packColors` | Encode optional per-cell RGB values |
-| `VERTEX_SHADER` / `FRAGMENT_SHADER` | Shader sources for custom integrations |
+| `mesh` | The `THREE.Mesh` to add to a scene |
+| `atlas` | The measured `GlyphAtlas` used by the renderer |
+| `aspect` | Read-only width/height ratio after the latest update |
+| `update(frame)` | Upload a new `AsciiFrame`; textures resize only if the grid changes |
+| `setBackground(color)` | Set the paper color |
+| `setInk(color)` | Set the fallback glyph color |
+| `setUseColor(enabled)` | Enable or disable per-cell frame colors |
+| `dispose()` | Release every owned GPU resource |
 
-## Core API
+`AsciiTilemapOptions` accepts `background`, `ink`, `useColor`, a reusable
+prebuilt `atlas`, an optional `canvas` factory, `tile` dimensions,
+`glyphScale`, and `baseline`.
 
-| Export | Purpose |
+The adapter also exports `buildGlyphAtlas`, `packGlyphIndices`, `packColors`,
+`VERTEX_SHADER`, and `FRAGMENT_SHADER` for custom rendering integrations.
+
+## Other exports
+
+| Area | Exports |
 | --- | --- |
-| `buildAlexHarriAlphabet` | Measure glyphs with the exact published geometry |
-| `alexHarriAlgorithm` | Convert an RGBA frame with the exact Harri comparator |
-| `ALEX_HARRI_CELL` | Published 48×64 glyph cell |
-| `ALEX_HARRI_ZONES` | Published 2×3 internal sampling grid |
-| `ALEX_HARRI_LAYOUT` | Six internal and ten external sample positions |
-| `toText` | Join an ASCII frame into newline-separated text |
-| `serializeAlphabet` / `deserializeAlphabet` | Store and restore measured glyphs |
-| `selectMostDistinct` | Reduce a measured alphabet while retaining separation |
-| `charsets.SHAPE_ASCII` | Portable sub-50 printable palette |
+| Harri constants | `ALEX_HARRI_CELL`, `ALEX_HARRI_ZONES`, `ALEX_HARRI_LAYOUT` |
+| General pipeline | `buildAlphabet`, `buildLayout`, `imageToAscii`, `computeGrid`, `sampleFrame` |
+| Matching | `CharacterMatcher`, `KdTree`, `selectMostDistinct` |
+| Storage | `serializeAlphabet`, `deserializeAlphabet` |
+| Raster helpers | `rasterizeGlyph`, `circleLightness`, `lightness`, `fontShorthand` |
+| Canvas integration | `defaultCanvasFactory`, `CanvasFactory`, `CanvasLike`, `Context2DLike` |
+| Palettes | `charsets.ASCII`, `SYMBOLS`, `RAMP`, `SHAPE_ASCII`, plus specialty sets for the general pipeline |
 
-Lower-level alphabet, layout, sampling, and matcher exports remain available
-because they form the Harri runtime and are useful when integrating custom
-fonts or streaming renderers. No experimental converter registry,
-preprocessing suite, evaluator, presets, corpus, or debug server is shipped.
+The TypeScript declarations document all option and data interfaces. The
+general `imageToAscii` pipeline permits custom layouts and larger or specialty
+palettes; the stricter printable-ASCII and sub-50 rules apply to
+`alexHarriAlgorithm`.
 
 ## Development
 
 ```bash
 bun install
-bun test
-bun run typecheck
+bun run check
 bun run demo
 ```
 
-Tests use a deterministic stub canvas and a vendored, MIT-licensed reference
-implementation for differential checks.
+`bun run check` runs the tests and type checker, builds ESM/CommonJS/declaration
+outputs, packs the package, and verifies root and Three.js imports from clean
+consumer projects. Tests use a deterministic stub canvas and a vendored,
+MIT-licensed reference implementation for differential checks.
+
+Release maintainers should follow [RELEASING.md](RELEASING.md).
 
 ## Credit
 
@@ -182,6 +257,6 @@ The algorithm is by **Alex Harri Jónsson**, described in
 [Rendering ASCII in WebGL](https://alexharri.com/blog/ascii-rendering) and
 implemented in [alexharri/website](https://github.com/alexharri/website).
 
-This package is an independent TypeScript implementation. The published sample
+This is an independent TypeScript implementation. The published sample
 geometry and the reference oracle retain Alex Harri Jónsson's MIT notice. See
 [LICENSE](LICENSE).

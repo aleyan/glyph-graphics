@@ -4,7 +4,7 @@ import type {
   SamplePoint,
   SamplingLayout,
   ZoneGrid,
-} from "./types";
+} from "./types.js";
 
 export interface LayoutOptions {
   /** How many sampling zones the cell is divided into, e.g. `{ cols: 2, rows: 3 }`. */

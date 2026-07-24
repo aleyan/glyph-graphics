@@ -1,4 +1,4 @@
-import type { Frame } from "./types";
+import type { Frame } from "./types.js";
 
 /**
  * The subset of `CanvasRenderingContext2D` this library uses. Declaring it
@@ -17,11 +17,15 @@ export interface Context2DLike {
 }
 
 export interface CanvasLike {
+  /** Backing-store width in pixels. */
   width: number;
+  /** Backing-store height in pixels. */
   height: number;
+  /** Acquire the two-dimensional context used for glyph measurement. */
   getContext(contextId: "2d"): Context2DLike | null;
 }
 
+/** Creates a canvas with the requested backing-store dimensions in pixels. */
 export type CanvasFactory = (width: number, height: number) => CanvasLike;
 
 /**

@@ -6,7 +6,10 @@ const transpiler = new Bun.Transpiler({ loader: "ts" });
 
 async function resolveLocalImport(importer: string, specifier: string): Promise<string> {
   const unresolved = resolve(dirname(importer), specifier);
-  for (const candidate of [unresolved, `${unresolved}.ts`, join(unresolved, "index.ts")]) {
+  const sourceCandidate = unresolved.endsWith(".js")
+    ? `${unresolved.slice(0, -3)}.ts`
+    : `${unresolved}.ts`;
+  for (const candidate of [unresolved, sourceCandidate, join(unresolved, "index.ts")]) {
     if (await Bun.file(candidate).exists()) return candidate;
   }
   throw new Error(`Could not resolve ${specifier} from ${importer}`);

@@ -1,5 +1,5 @@
-import { KdTree } from "./kdtree";
-import type { Alphabet } from "./types";
+import { KdTree } from "./kdtree.js";
+import type { Alphabet } from "./types.js";
 
 export interface MatcherOptions {
   /**
@@ -54,6 +54,12 @@ export class CharacterMatcher {
     return this.chars;
   }
 
+  /**
+   * Returns the closest glyph for one sampling vector.
+   *
+   * The vector must use the same dimensions and layout as the alphabet passed
+   * to the constructor.
+   */
   match(vector: ArrayLike<number>): string {
     if (!this.cache) return this.lookup(vector);
 

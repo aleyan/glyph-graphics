@@ -65,6 +65,12 @@ export class KdTree {
     return sum;
   }
 
+  /**
+   * Finds the stored vector nearest to `target`.
+   *
+   * `index` addresses the original flat vector store and `distanceSquared` is
+   * its squared Euclidean distance from the target.
+   */
   findNearest(target: ArrayLike<number>): NearestResult {
     let bestIndex = -1;
     let bestDistance = Infinity;

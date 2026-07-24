@@ -1,4 +1,4 @@
-import { buildLayout, type LayoutOptions } from "./layout";
+import { buildLayout, type LayoutOptions } from "./layout.js";
 import {
   circleLightness,
   defaultCanvasFactory,
@@ -7,15 +7,15 @@ import {
   type CanvasFactory,
   type FontSpec,
   type GlyphRasterOptions,
-} from "./raster";
-import { selectMostDistinct } from "./select";
+} from "./raster.js";
+import { selectMostDistinct } from "./select.js";
 import type {
   Alphabet,
   CellSize,
   SamplingLayout,
   SerializedAlphabet,
   ZoneGrid,
-} from "./types";
+} from "./types.js";
 
 export interface BuildAlphabetOptions extends GlyphRasterOptions {
   /** Font to measure. In a browser, ensure it is loaded before calling. */
@@ -132,6 +132,7 @@ function normalize(vectors: Float32Array): void {
   for (let i = 0; i < vectors.length; i++) vectors[i] = (vectors[i] ?? 0) / max;
 }
 
+/** Converts typed shape vectors into a JSON-safe alphabet representation. */
 export function serializeAlphabet(alphabet: Alphabet): SerializedAlphabet {
   const { chars, vectors, dimensions, layout, cell, font } = alphabet;
   return {
@@ -143,6 +144,7 @@ export function serializeAlphabet(alphabet: Alphabet): SerializedAlphabet {
   };
 }
 
+/** Restores a JSON-safe alphabet into the typed representation used for matching. */
 export function deserializeAlphabet(data: SerializedAlphabet): Alphabet {
   const dimensions = data.layout.points.length;
   const vectors = new Float32Array(data.chars.length * dimensions);

@@ -1,4 +1,4 @@
-import type { Alphabet } from "./types";
+import type { Alphabet } from "./types.js";
 
 /**
  * Reduces an alphabet to `count` characters that stay as far apart as possible

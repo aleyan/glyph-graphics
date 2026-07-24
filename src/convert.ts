@@ -1,6 +1,6 @@
-import { CharacterMatcher } from "./matcher";
-import { sampleFrame, type GridGeometry, type SampleOptions } from "./sample";
-import type { Alphabet, AsciiFrame, Frame } from "./types";
+import { CharacterMatcher } from "./matcher.js";
+import { sampleFrame, type GridGeometry, type SampleOptions } from "./sample.js";
+import type { Alphabet, AsciiFrame, Frame } from "./types.js";
 
 export interface ConvertOptions extends SampleOptions {
   /**
