@@ -1,0 +1,88 @@
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+tag-prefix: "v"
+
+change-template: "- $TITLE by @$AUTHOR in #$NUMBER"
+change-title-escapes: '\<*_&'
+
+categories:
+  - type: pre-exclude
+    when:
+      label: skip-changelog
+
+  - title: "Breaking changes"
+    exclusive: true
+    semver-increment: major
+    when:
+      labels:
+        - breaking
+        - breaking-change
+
+  - title: "Features"
+    exclusive: true
+    semver-increment: minor
+    when:
+      labels:
+        - feature
+        - enhancement
+
+  - title: "Bug fixes"
+    exclusive: true
+    semver-increment: patch
+    when:
+      labels:
+        - fix
+        - bug
+        - bugfix
+
+  - title: "Documentation"
+    exclusive: true
+    when:
+      labels:
+        - documentation
+        - docs
+
+  - title: "Dependencies"
+    exclusive: true
+    collapse-after: 5
+    when:
+      labels:
+        - dependencies
+
+  - title: "Maintenance"
+    exclusive: true
+    when:
+      labels:
+        - chore
+        - maintenance
+        - refactor
+        - tests
+        - ci
+
+  - title: "Other changes"
+
+  # A major/minor label can override the changelog category's normal increment.
+  - type: version-resolver
+    semver-increment: major
+    when:
+      label: major
+
+  - type: version-resolver
+    semver-increment: minor
+    when:
+      label: minor
+
+  # Unlabelled changes and documentation/maintenance-only releases are patches.
+  - type: version-resolver
+    semver-increment: patch
+
+template: |
+  ## What's changed
+
+  $CHANGES
+
+  ## Install
+
+  ```bash
+  npm install glyph-graphics@$RESOLVED_VERSION
+  ```
