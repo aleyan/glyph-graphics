@@ -24,15 +24,23 @@ npm install glyph-graphics
 The package includes ESM, CommonJS, and TypeScript declarations and supports
 Node.js 20+, Bun, and modern browsers.
 
-Three.js is an optional peer. Install it only if you use
-`glyph-graphics/three`:
+### Optional Three.js Integration
+
+The Three.js renderer is built into the package as a subpath export (`glyph-graphics/three`). It requires `three` as an optional peer dependency:
 
 ```bash
-npm install three
+npm install glyph-graphics three
 npm install --save-dev @types/three
 ```
 
+You can then import directly from `"glyph-graphics/three"`:
+
+```ts
+import { GlyphTilemap } from "glyph-graphics/three";
+```
+
 The root `glyph-graphics` import never loads Three.js.
+
 
 ## Quick start
 
