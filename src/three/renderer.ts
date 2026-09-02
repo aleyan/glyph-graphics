@@ -91,10 +91,12 @@ export class AsciiTilemap {
       this.resize(frame.cols, frame.rows);
     }
 
-    this.glyphData.set(packGlyphIndices(frame, this.atlas));
+    // Packed straight into the textures' own buffers: at 60fps the copies this
+    // avoids are the only garbage an otherwise steady upload path would make.
+    packGlyphIndices(frame, this.atlas, this.glyphData);
     this.glyphTexture!.needsUpdate = true;
 
-    this.colorData.set(packColors(frame));
+    packColors(frame, this.colorData);
     this.colorTexture!.needsUpdate = true;
 
     // Keep the quad at the frame's aspect so glyphs render square-on.

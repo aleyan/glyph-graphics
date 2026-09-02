@@ -158,7 +158,7 @@ function bankFor(alphabet: Alphabet): GlyphBank {
 
   if (!hasExactHarriGeometry(alphabet)) {
     throw new Error(
-      "Alex Harri conversion requires an alphabet built with buildAlexHarriAlphabet",
+      "Conversion requires an alphabet built with buildAlphabet",
     );
   }
 

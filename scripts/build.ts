@@ -7,6 +7,7 @@ const outputRoot = join(projectRoot, "dist");
 const entrypoints = [
   join(sourceRoot, "index.ts"),
   join(sourceRoot, "three", "index.ts"),
+  join(sourceRoot, "video", "index.ts"),
 ];
 
 await rm(outputRoot, { recursive: true, force: true });

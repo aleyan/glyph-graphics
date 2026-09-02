@@ -36,11 +36,28 @@ async function runtimeDependencies(entrypoint: string): Promise<Set<string>> {
 }
 
 describe("package runtime boundary", () => {
+  test("presents the recommended core and renderer API", async () => {
+    const core = await import("../src/index.js");
+    const three = await import("../src/three/index.js");
+
+    expect(core.buildAlphabet).toBeFunction();
+    expect(core.convert).toBeFunction();
+    expect(core.toText).toBeFunction();
+    expect(three.AsciiTilemap).toBeFunction();
+    expect(three.buildGlyphAtlas).toBeFunction();
+    expect(three.packGlyphIndices).toBeFunction();
+    expect(three.packColors).toBeFunction();
+    expect(typeof three.VERTEX_SHADER).toBe("string");
+    expect(typeof three.FRAGMENT_SHADER).toBe("string");
+  });
+
   test("only the Three.js subpath has a runtime dependency on three", async () => {
     const core = await runtimeDependencies("src/index.ts");
     const three = await runtimeDependencies("src/three/index.ts");
+    const video = await runtimeDependencies("src/video/index.ts");
 
     expect(core.has("three")).toBe(false);
+    expect(video.has("three")).toBe(false);
     expect(three.has("three")).toBe(true);
   });
 });

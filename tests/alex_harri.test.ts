@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import { buildAlphabet, convert } from "../src/index";
 import {
   ALEX_HARRI_CELL,
   ALEX_HARRI_LAYOUT,
   ALEX_HARRI_ZONES,
   alexHarriAlgorithm,
-  buildAlexHarriAlphabet,
-} from "../src/index";
+} from "../src/harri";
 import { buildLayout } from "../src/layout";
 import type { Alphabet, Frame } from "../src/types";
 import { stubCanvas } from "./stubCanvas";
@@ -77,7 +77,7 @@ describe("Alex Harri reference geometry", () => {
   });
 
   test("builds glyph vectors under the exact hand-tuned layout", () => {
-    const alphabet = buildAlexHarriAlphabet({
+    const alphabet = buildAlphabet({
       font: { family: "stub", size: 64 },
       chars: " ",
       canvas: stubCanvas,
@@ -98,12 +98,12 @@ describe("Alex Harri reference geometry", () => {
       external: false,
     });
     expect(() =>
-      alexHarriAlgorithm.convert(publishedPointFrame(), alphabet, {
+      convert(publishedPointFrame(), alphabet, {
         cols: 1,
         rows: 1,
         quality: 1,
       }),
-    ).toThrow(/buildAlexHarriAlphabet/);
+    ).toThrow(/buildAlphabet/);
   });
 });
 

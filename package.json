@@ -1,7 +1,7 @@
 {
   "name": "glyph-graphics",
-  "version": "0.1.0",
-  "description": "Alex Harri's shape-aware ASCII converter with an optional Three.js tilemap renderer.",
+  "version": "0.2.0",
+  "description": "Shape-aware image-to-ASCII conversion with optional Three.js rendering and JSONL video.",
   "author": "Alex Yankov",
   "license": "MIT",
   "type": "module",
@@ -21,6 +21,12 @@
       "import": "./dist/three/index.js",
       "require": "./dist/three/index.cjs",
       "default": "./dist/three/index.js"
+    },
+    "./video": {
+      "types": "./dist/video/index.d.ts",
+      "import": "./dist/video/index.js",
+      "require": "./dist/video/index.cjs",
+      "default": "./dist/video/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -62,6 +68,7 @@
     "build:types": "tsc -p tsconfig.build.json",
     "build": "bun run build:js && bun run build:types",
     "demo": "bun examples/demo.ts",
+    "demo:browser": "bun --hot examples/browser_demo.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "verify:package": "bun scripts/verify-package.ts",
