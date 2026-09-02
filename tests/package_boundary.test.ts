@@ -39,8 +39,10 @@ describe("package runtime boundary", () => {
   test("only the Three.js subpath has a runtime dependency on three", async () => {
     const core = await runtimeDependencies("src/index.ts");
     const three = await runtimeDependencies("src/three/index.ts");
+    const video = await runtimeDependencies("src/video/index.ts");
 
     expect(core.has("three")).toBe(false);
     expect(three.has("three")).toBe(true);
+    expect(video.has("three")).toBe(false);
   });
 });

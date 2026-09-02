@@ -127,3 +127,51 @@ describe("packColors", () => {
     expect(Array.from(packColors(frame))).toEqual([255, 255, 255, 255]);
   });
 });
+
+describe("packing into a caller's buffer", () => {
+  const alphabet = blockAlphabet();
+  const atlas = buildGlyphAtlas(alphabet, { canvas: stubCanvas });
+
+  test("writes into a buffer of the right size instead of allocating", () => {
+    const frame: AsciiFrame = {
+      cols: 2,
+      rows: 1,
+      chars: ["█", " "],
+      colors: new Uint8Array([10, 20, 30, 40, 50, 60]),
+    };
+    const glyphBuffer = new Uint8Array(2 * 4);
+    const colorBuffer = new Uint8Array(2 * 4);
+
+    expect(packGlyphIndices(frame, atlas, glyphBuffer)).toBe(glyphBuffer);
+    expect(packColors(frame, colorBuffer)).toBe(colorBuffer);
+    expect(glyphBuffer[0]).toBe(atlas.index.get("█")! & 0xff);
+    expect(Array.from(colorBuffer.subarray(0, 4))).toEqual([10, 20, 30, 255]);
+  });
+
+  test("leaves no stale cells behind when the frame changes", () => {
+    const glyphBuffer = packGlyphIndices(
+      { cols: 2, rows: 1, chars: ["█", "█"] },
+      atlas,
+    );
+    const colorBuffer = packColors({
+      cols: 2,
+      rows: 1,
+      chars: ["█", "█"],
+      colors: new Uint8Array([9, 9, 9, 9, 9, 9]),
+    });
+
+    // A frame with fewer characters, and one with no colour, must clear the
+    // cells the previous frame wrote rather than inherit them.
+    packGlyphIndices({ cols: 2, rows: 1, chars: ["█"] }, atlas, glyphBuffer);
+    packColors({ cols: 2, rows: 1, chars: ["█", "█"] }, colorBuffer);
+    expect(Array.from(glyphBuffer.subarray(4, 8))).toEqual([0, 0, 0, 255]);
+    expect(Array.from(colorBuffer.subarray(4, 8))).toEqual([255, 255, 255, 255]);
+  });
+
+  test("ignores a buffer of the wrong size", () => {
+    const frame: AsciiFrame = { cols: 2, rows: 1, chars: ["█", "█"] };
+    const tooSmall = new Uint8Array(4);
+    expect(packGlyphIndices(frame, atlas, tooSmall)).not.toBe(tooSmall);
+    expect(packColors(frame, tooSmall)).not.toBe(tooSmall);
+  });
+});

@@ -113,17 +113,39 @@ export function buildGlyphAtlas(alphabet: Alphabet, options: AtlasOptions = {}):
 }
 
 /**
+ * A texture-sized scratch buffer, reused when the caller supplies one.
+ *
+ * At video frame rates the packing buffers are the only garbage the upload path
+ * produces — two textures' worth per frame — so both packers write into a
+ * caller-owned buffer when its size matches.
+ */
+function packInto(into: Uint8Array | undefined, cells: number): Uint8Array {
+  return into && into.length === cells * 4 ? into : new Uint8Array(cells * 4);
+}
+
+/**
  * Packs a converted frame's characters into a per-cell glyph-index texture.
  *
  * The index is split across the red and green bytes (little end first), so the
  * shader can address atlases well past 256 glyphs. Alpha is left at 255.
+ *
+ * Pass `into` to write into an existing buffer of exactly `cols * rows * 4`
+ * bytes; a buffer of any other size is ignored and a new one returned.
  */
-export function packGlyphIndices(frame: AsciiFrame, atlas: GlyphAtlas): Uint8Array {
-  const data = new Uint8Array(frame.cols * frame.rows * 4);
-  for (let i = 0; i < frame.chars.length; i++) {
-    const glyph = atlas.index.get(frame.chars[i] ?? " ") ?? 0;
+export function packGlyphIndices(
+  frame: AsciiFrame,
+  atlas: GlyphAtlas,
+  into?: Uint8Array,
+): Uint8Array {
+  const cells = frame.cols * frame.rows;
+  const data = packInto(into, cells);
+  for (let i = 0; i < cells; i++) {
+    const glyph = i < frame.chars.length
+      ? atlas.index.get(frame.chars[i] ?? " ") ?? 0
+      : 0;
     data[i * 4] = glyph & 0xff;
     data[i * 4 + 1] = (glyph >> 8) & 0xff;
+    data[i * 4 + 2] = 0;
     data[i * 4 + 3] = 255;
   }
   return data;
@@ -132,11 +154,15 @@ export function packGlyphIndices(frame: AsciiFrame, atlas: GlyphAtlas): Uint8Arr
 /**
  * Packs a converted frame's per-cell colours into an RGBA texture. Cells fall
  * back to white when the frame carries no colour, leaving glyphs untinted.
+ *
+ * Pass `into` to write into an existing buffer of exactly `cols * rows * 4`
+ * bytes; a buffer of any other size is ignored and a new one returned.
  */
-export function packColors(frame: AsciiFrame): Uint8Array {
-  const data = new Uint8Array(frame.cols * frame.rows * 4);
+export function packColors(frame: AsciiFrame, into?: Uint8Array): Uint8Array {
+  const cells = frame.cols * frame.rows;
+  const data = packInto(into, cells);
   const colors = frame.colors;
-  for (let i = 0; i < frame.cols * frame.rows; i++) {
+  for (let i = 0; i < cells; i++) {
     if (colors) {
       data[i * 4] = colors[i * 3] ?? 255;
       data[i * 4 + 1] = colors[i * 3 + 1] ?? 255;

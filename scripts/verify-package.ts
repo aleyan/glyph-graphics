@@ -153,9 +153,49 @@ try {
     .cwd(consumerRoot)
     .quiet();
 
+  await $`node --input-type=module -e ${`
+    import { parseAsciiVideo, createAsciiVideoCursor, encodeAsciiVideo } from "glyph-graphics/video";
+    if (typeof parseAsciiVideo !== "function") process.exit(1);
+    if (typeof createAsciiVideoCursor !== "function") process.exit(1);
+    if (typeof encodeAsciiVideo !== "function") process.exit(1);
+  `}`.cwd(consumerRoot).quiet();
+  await $`node -e ${`
+    const video = require("glyph-graphics/video");
+    if (typeof video.parseAsciiVideo !== "function") process.exit(1);
+    if (typeof video.createAsciiVideoCursor !== "function") process.exit(1);
+    if (typeof video.encodeAsciiVideo !== "function") process.exit(1);
+  `}`.cwd(consumerRoot).quiet();
+
+  const videoTypeTest = join(consumerRoot, "video-consumer.ts");
+  await writeFile(
+    videoTypeTest,
+    [
+      'import { parseAsciiVideo, type AsciiVideo, type AsciiVideoCursor } from "glyph-graphics/video";',
+      'const video: AsciiVideo = parseAsciiVideo(\'{"format":"ascii-video-jsonl","version":1,"cols":1,"rows":1,"fps":60,"frames":1,"codeWidth":1,"palette":["ffffff"]}\\n[[0," "," "]]\');',
+      "void [video];",
+    ].join("\n"),
+  );
+  await $`node ${tsc} --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext ${videoTypeTest}`
+    .cwd(consumerRoot)
+    .quiet();
+
+  const videoCommonJsTypeTest = join(consumerRoot, "video-consumer.cts");
+  await writeFile(
+    videoCommonJsTypeTest,
+    [
+      'import video = require("glyph-graphics/video");',
+      'const parsed: video.AsciiVideo = video.parseAsciiVideo(\'{"format":"ascii-video-jsonl","version":1,"cols":1,"rows":1,"fps":60,"frames":1,"codeWidth":1,"palette":["ffffff"]}\\n[[0," "," "]]\');',
+      "void [parsed];",
+    ].join("\n"),
+  );
+  await $`node ${tsc} --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext ${videoCommonJsTypeTest}`
+    .cwd(consumerRoot)
+    .quiet();
+
   const tarballStats = await lstat(tarball);
   console.log(
     `Verified ${Math.ceil(tarballStats.size / 1024)} KB package: ESM, CommonJS, types, and optional Three.js adapter.`,
+    `Verified ${Math.ceil(tarballStats.size / 1024)} KB package: ESM, CommonJS, types, video codec, and optional Three.js adapter.`,
   );
 } finally {
   await rm(temporaryRoot, { recursive: true, force: true });

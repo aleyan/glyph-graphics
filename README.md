@@ -227,12 +227,41 @@ prebuilt `atlas`, an optional `canvas` factory, `tile` dimensions,
 The adapter also exports `buildGlyphAtlas`, `packGlyphIndices`, `packColors`,
 `VERTEX_SHADER`, and `FRAGMENT_SHADER` for custom rendering integrations.
 
+### ASCII Video Codec & Playback (`glyph-graphics/video`)
+
+The package includes a compact delta-compressed video format and cursor:
+
+```ts
+import {
+  buildAsciiVideoPalette,
+  createAsciiVideoCursor,
+  encodeAsciiVideo,
+  expandPaletteColors,
+  parseAsciiVideo,
+} from "glyph-graphics/video";
+
+// Encode converted frames into quantized delta JSONL
+const palette = buildAsciiVideoPalette(frames, 64);
+const encoded = encodeAsciiVideo({ cols: 80, rows: 40, fps: 30, frames, palette });
+
+// Decode and play back frame-by-frame with zero allocation
+const video = parseAsciiVideo(encoded.jsonl);
+const cursor = createAsciiVideoCursor(video);
+
+cursor.seek(frameIndex);
+// cursor.glyphs: string[] (row-major character grid)
+// cursor.colors: Uint8Array (row-major palette indexes)
+```
+
+Also includes ANSI terminal playback utilities (`createAsciiVideoPainter`, `playAsciiVideo`, `asciiVideoOpening`, `asciiVideoClosing`).
+
 ## Other exports
 
 | Area | Exports |
 | --- | --- |
 | Harri constants | `ALEX_HARRI_CELL`, `ALEX_HARRI_ZONES`, `ALEX_HARRI_LAYOUT` |
 | General pipeline | `buildAlphabet`, `buildLayout`, `imageToAscii`, `computeGrid`, `sampleFrame` |
+| Video pipeline | `parseAsciiVideo`, `encodeAsciiVideo`, `buildAsciiVideoPalette`, `createAsciiVideoCursor`, `expandPaletteColors`, `playAsciiVideo` |
 | Matching | `CharacterMatcher`, `KdTree`, `selectMostDistinct` |
 | Storage | `serializeAlphabet`, `deserializeAlphabet` |
 | Raster helpers | `rasterizeGlyph`, `circleLightness`, `lightness`, `fontShorthand` |
