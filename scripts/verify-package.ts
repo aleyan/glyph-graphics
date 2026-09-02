@@ -56,7 +56,12 @@ try {
   const installedRoot = join(consumerRoot, "node_modules", "glyph-graphics");
   const installedPackage = JSON.parse(
     await readFile(join(installedRoot, "package.json"), "utf8"),
-  ) as { main?: string; module?: string; types?: string };
+  ) as {
+    main?: string;
+    module?: string;
+    types?: string;
+    exports?: Record<string, unknown>;
+  };
 
   if (
     installedPackage.main !== "./dist/index.cjs" ||
@@ -65,28 +70,40 @@ try {
   ) {
     throw new Error("Packed package metadata does not point to compiled output");
   }
+  if (
+    Object.keys(installedPackage.exports ?? {}).sort().join(",") !==
+    ".,./package.json,./three,./video"
+  ) {
+    throw new Error(
+      "Packed package does not have the expected core, Three.js, and video entrypoints",
+    );
+  }
   if (await exists(join(installedRoot, "src"))) {
     throw new Error("Packed package unexpectedly contains source files");
   }
 
   await $`node --input-type=module -e ${`
-    import { ALEX_HARRI_LAYOUT, charsets } from "glyph-graphics";
-    if (ALEX_HARRI_LAYOUT.points.length !== 6) process.exit(1);
-    if ([...charsets.SHAPE_ASCII].length !== 47) process.exit(1);
+    import * as core from "glyph-graphics";
+    if (typeof core.buildAlphabet !== "function") process.exit(1);
+    if (typeof core.convert !== "function") process.exit(1);
+    if ([...core.charsets.SHAPE_ASCII].length !== 47) process.exit(1);
   `}`.cwd(consumerRoot).quiet();
   await $`node -e ${`
     const core = require("glyph-graphics");
-    if (core.ALEX_HARRI_LAYOUT.points.length !== 6) process.exit(1);
+    if (typeof core.buildAlphabet !== "function") process.exit(1);
+    if (typeof core.convert !== "function") process.exit(1);
   `}`.cwd(consumerRoot).quiet();
 
   const coreTypeTest = join(consumerRoot, "core-consumer.ts");
   await writeFile(
     coreTypeTest,
     [
-      'import { ALEX_HARRI_CELL, type AlexHarriOptions, type Frame } from "glyph-graphics";',
+      'import { ALEX_HARRI_LAYOUT, ALEX_HARRI_ZONES, CharacterMatcher, buildAlphabet, convert, imageToAscii, type AlexHarriOptions, type BuildAlphabetOptions, type Frame } from "glyph-graphics";',
+      "const buildOptions: BuildAlphabetOptions = { font: { family: 'monospace', size: 64 }, chars: ' .' };",
+      "const customBuildOptions: BuildAlphabetOptions = { font: { family: 'monospace', size: 64 }, chars: ' .', cell: { width: 32, height: 64 }, zones: ALEX_HARRI_ZONES, samplingLayout: ALEX_HARRI_LAYOUT };",
       "const options: AlexHarriOptions = { cols: 80, quality: 5 };",
       "const frame: Frame = { data: new Uint8Array(4), width: 1, height: 1 };",
-      "void [ALEX_HARRI_CELL, options, frame];",
+      "void [CharacterMatcher, buildAlphabet, convert, imageToAscii, buildOptions, customBuildOptions, options, frame];",
     ].join("\n"),
   );
   const tsc = join(projectRoot, "node_modules", "typescript", "bin", "tsc");
@@ -99,9 +116,9 @@ try {
     coreCommonJsTypeTest,
     [
       'import core = require("glyph-graphics");',
-      "const options: core.AlexHarriOptions = { cols: 80, quality: 5 };",
+      "const options: core.ConvertOptions = { cols: 80, quality: 5 };",
       "const frame: core.Frame = { data: new Uint8Array(4), width: 1, height: 1 };",
-      "void [core.ALEX_HARRI_CELL, options, frame];",
+      "void [core.buildAlphabet, core.convert, options, frame];",
     ].join("\n"),
   );
   await $`node ${tsc} --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext ${coreCommonJsTypeTest}`
@@ -118,13 +135,16 @@ try {
   );
 
   await $`node --input-type=module -e ${`
-    import { AsciiTilemap, buildGlyphAtlas } from "glyph-graphics/three";
+    import { AsciiTilemap, buildGlyphAtlas, packColors, packGlyphIndices } from "glyph-graphics/three";
     if (typeof AsciiTilemap !== "function") process.exit(1);
     if (typeof buildGlyphAtlas !== "function") process.exit(1);
+    if (typeof packColors !== "function") process.exit(1);
+    if (typeof packGlyphIndices !== "function") process.exit(1);
   `}`.cwd(consumerRoot).quiet();
   await $`node -e ${`
     const adapter = require("glyph-graphics/three");
     if (typeof adapter.AsciiTilemap !== "function") process.exit(1);
+    if (typeof adapter.buildGlyphAtlas !== "function") process.exit(1);
   `}`.cwd(consumerRoot).quiet();
 
   const threeTypeTest = join(consumerRoot, "three-consumer.ts");
@@ -154,16 +174,15 @@ try {
     .quiet();
 
   await $`node --input-type=module -e ${`
-    import { parseAsciiVideo, createAsciiVideoCursor, encodeAsciiVideo } from "glyph-graphics/video";
-    if (typeof parseAsciiVideo !== "function") process.exit(1);
-    if (typeof createAsciiVideoCursor !== "function") process.exit(1);
-    if (typeof encodeAsciiVideo !== "function") process.exit(1);
+    import * as video from "glyph-graphics/video";
+    if (typeof video.encodeAsciiVideo !== "function") process.exit(1);
+    if (typeof video.parseAsciiVideo !== "function") process.exit(1);
+    if (typeof video.createAsciiVideoCursor !== "function") process.exit(1);
   `}`.cwd(consumerRoot).quiet();
   await $`node -e ${`
     const video = require("glyph-graphics/video");
-    if (typeof video.parseAsciiVideo !== "function") process.exit(1);
-    if (typeof video.createAsciiVideoCursor !== "function") process.exit(1);
     if (typeof video.encodeAsciiVideo !== "function") process.exit(1);
+    if (typeof video.playAsciiVideo !== "function") process.exit(1);
   `}`.cwd(consumerRoot).quiet();
 
   const videoTypeTest = join(consumerRoot, "video-consumer.ts");
@@ -171,31 +190,18 @@ try {
     videoTypeTest,
     [
       'import { parseAsciiVideo, type AsciiVideo, type AsciiVideoCursor } from "glyph-graphics/video";',
-      'const video: AsciiVideo = parseAsciiVideo(\'{"format":"ascii-video-jsonl","version":1,"cols":1,"rows":1,"fps":60,"frames":1,"codeWidth":1,"palette":["ffffff"]}\\n[[0," "," "]]\');',
-      "void [video];",
+      'const parsed: AsciiVideo = parseAsciiVideo(\'{"format":"ascii-video-jsonl","version":1,"cols":1,"rows":1,"fps":60,"frames":1,"codeWidth":1,"palette":["ffffff"]}\\n[[0," "," "]]\');',
+      "const cursor: AsciiVideoCursor | undefined = undefined;",
+      "void [parsed, cursor];",
     ].join("\n"),
   );
   await $`node ${tsc} --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext ${videoTypeTest}`
     .cwd(consumerRoot)
     .quiet();
 
-  const videoCommonJsTypeTest = join(consumerRoot, "video-consumer.cts");
-  await writeFile(
-    videoCommonJsTypeTest,
-    [
-      'import video = require("glyph-graphics/video");',
-      'const parsed: video.AsciiVideo = video.parseAsciiVideo(\'{"format":"ascii-video-jsonl","version":1,"cols":1,"rows":1,"fps":60,"frames":1,"codeWidth":1,"palette":["ffffff"]}\\n[[0," "," "]]\');',
-      "void [parsed];",
-    ].join("\n"),
-  );
-  await $`node ${tsc} --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext ${videoCommonJsTypeTest}`
-    .cwd(consumerRoot)
-    .quiet();
-
   const tarballStats = await lstat(tarball);
   console.log(
-    `Verified ${Math.ceil(tarballStats.size / 1024)} KB package: ESM, CommonJS, types, and optional Three.js adapter.`,
-    `Verified ${Math.ceil(tarballStats.size / 1024)} KB package: ESM, CommonJS, types, video codec, and optional Three.js adapter.`,
+    `Verified ${Math.ceil(tarballStats.size / 1024)} KB package: core, optional Three.js, and standalone JSONL video entrypoints.`,
   );
 } finally {
   await rm(temporaryRoot, { recursive: true, force: true });

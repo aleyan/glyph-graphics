@@ -6,9 +6,9 @@
  */
 import { createCanvas } from "@napi-rs/canvas";
 import {
-  alexHarriAlgorithm,
-  buildAlexHarriAlphabet,
+  buildAlphabet,
   charsets,
+  convert,
   toText,
   type AlexHarriOptions,
 } from "../src/index";
@@ -127,11 +127,11 @@ const FONT = { family: "Menlo, DejaVu Sans Mono, monospace", size: 64 };
 const ZONES = { cols: 2, rows: 3 };
 
 function alphabetFor(chars: string): Alphabet {
-  return buildAlexHarriAlphabet({ font: FONT, chars, canvas });
+  return buildAlphabet({ font: FONT, chars, canvas });
 }
 
-function convert(frame: Frame, alphabet: Alphabet, options: AlexHarriOptions): AsciiFrame {
-  return alexHarriAlgorithm.convert(frame, alphabet, options);
+function renderAscii(frame: Frame, alphabet: Alphabet, options: AlexHarriOptions): AsciiFrame {
+  return convert(frame, alphabet, options);
 }
 
 const ascii = alphabetFor(charsets.SHAPE_ASCII);
@@ -144,16 +144,16 @@ console.log(
 
 heading("A lit sphere", "smooth tone; the ramp below is discovered, not hand-ordered");
 console.log(
-  toText(convert(sphere(), ascii, { cols: 74, quality: 7, globalCrunch: 2 })),
+  toText(renderAscii(sphere(), ascii, { cols: 74, quality: 7, globalCrunch: 2 })),
 );
 
 heading("The same scene across character sets");
 const scene = sphere(384);
 columns([
-  { label: "SHAPE_ASCII", text: toText(convert(scene, ascii, { cols: 34, quality: 7 })) },
+  { label: "SHAPE_ASCII", text: toText(renderAscii(scene, ascii, { cols: 34, quality: 7 })) },
   {
     label: "RAMP",
-    text: toText(convert(scene, alphabetFor(charsets.RAMP), { cols: 34, quality: 7 })),
+    text: toText(renderAscii(scene, alphabetFor(charsets.RAMP), { cols: 34, quality: 7 })),
   },
 ]);
 
@@ -162,11 +162,11 @@ const edges = glyphTest();
 columns([
   {
     label: "plain",
-    text: toText(convert(edges, ascii, { cols: 34, quality: 7 })),
+    text: toText(renderAscii(edges, ascii, { cols: 34, quality: 7 })),
   },
   {
     label: "directionalCrunch: 3",
-    text: toText(convert(edges, ascii, { cols: 34, quality: 7, directionalCrunch: 3 })),
+    text: toText(renderAscii(edges, ascii, { cols: 34, quality: 7, directionalCrunch: 3 })),
   },
 ]);
 
@@ -188,6 +188,6 @@ for (const pair of [
 }
 
 heading("Colour", "an average RGB per cell, for tinting a tilemap renderer");
-const tinted = convert(sphere(256), ascii, { cols: 24, quality: 7, color: true });
+const tinted = renderAscii(sphere(256), ascii, { cols: 24, quality: 7, color: true });
 console.log(`  ${DIM}chars: ${tinted.cols}x${tinted.rows}${RESET}`);
 console.log(`  ${DIM}colors: ${tinted.colors?.length} bytes (${tinted.cols * tinted.rows} RGB triplets)${RESET}\n`);

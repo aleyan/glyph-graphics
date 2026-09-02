@@ -8,6 +8,13 @@ All notable changes to this package are documented here. The format follows
 
 ### Changed
 
+- The README now focuses on the primary alphabet construction and conversion
+  workflow while retaining the configurable APIs used by advanced consumers.
+- The optional `glyph-graphics/three` entrypoint now exposes `AsciiTilemap`
+  rather than its internal atlas packers and shaders.
+- The optional `glyph-graphics/video` entrypoint provides palette-quantized,
+  delta-encoded JSONL for prerendered ASCII video plus browser and terminal
+  playback helpers. It is independent of Three.js and the core entrypoint.
 - `packGlyphIndices` and `packColors` accept an optional buffer to write into,
   and `AsciiTilemap.update` passes its own texture buffers. Uploading a frame no
   longer allocates two textures' worth of scratch, which at video frame rates was

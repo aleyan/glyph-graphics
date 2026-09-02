@@ -1,5 +1,47 @@
-export { buildAlphabet, deserializeAlphabet, serializeAlphabet } from "./alphabet.js";
-export type { BuildAlphabetOptions } from "./alphabet.js";
+import {
+  buildAlphabet as buildCustomAlphabet,
+  type BuildAlphabetOptions as BuildCustomAlphabetOptions,
+} from "./alphabet.js";
+import {
+  alexHarriAlgorithm,
+  buildAlexHarriAlphabet,
+  type AlexHarriOptions,
+  type BuildAlexHarriAlphabetOptions,
+} from "./harri.js";
+import type { Alphabet, AsciiFrame, Frame } from "./types.js";
+
+/**
+ * Alphabet options for either the standard Harri geometry or an explicitly
+ * configured cell and sampling layout.
+ */
+export type BuildAlphabetOptions =
+  | BuildAlexHarriAlphabetOptions
+  | BuildCustomAlphabetOptions;
+
+/**
+ * Measure a glyph palette. Omitting `cell` and `zones` uses the published
+ * Harri geometry; supplying them enables the configurable pipeline.
+ */
+export function buildAlphabet(options: BuildAlphabetOptions): Alphabet {
+  if ("cell" in options || "zones" in options) {
+    if (!("cell" in options) || !("zones" in options)) {
+      throw new Error("Custom alphabet measurement requires both `cell` and `zones`");
+    }
+    return buildCustomAlphabet(options as BuildCustomAlphabetOptions);
+  }
+  return buildAlexHarriAlphabet(options);
+}
+
+/** Convert one row-major RGBA frame with the standard Harri comparator. */
+export function convert(
+  frame: Frame,
+  alphabet: Alphabet,
+  options?: AlexHarriOptions,
+): AsciiFrame {
+  return alexHarriAlgorithm.convert(frame, alphabet, options);
+}
+
+export { deserializeAlphabet, serializeAlphabet } from "./alphabet.js";
 
 export { buildLayout, unitDiskSamples } from "./layout.js";
 export type { LayoutOptions } from "./layout.js";

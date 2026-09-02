@@ -1,9 +1,7 @@
 {
   "name": "glyph-graphics",
-  "version": "0.1.0",
-  "description": "Alex Harri's shape-aware ASCII converter with an optional Three.js tilemap renderer.",
   "version": "0.2.0",
-  "description": "Alex Harri's shape-aware ASCII converter with an optional Three.js tilemap renderer and ASCII video codec.",
+  "description": "Shape-aware image-to-ASCII conversion with optional Three.js rendering and JSONL video.",
   "author": "Alex Yankov",
   "license": "MIT",
   "type": "module",

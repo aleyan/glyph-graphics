@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import {
-  alexHarriAlgorithm,
-  buildAlexHarriAlphabet,
+  buildAlphabet,
   charsets,
+  convert,
   type AlexHarriOptions,
   type Alphabet,
 } from "../src/index.js";
@@ -108,7 +108,7 @@ async function init(): Promise<void> {
   await ensureFontLoaded(currentFont);
 
   // Build alphabet with shape vectors
-  alphabet = buildAlexHarriAlphabet({
+  alphabet = buildAlphabet({
     font: { family: `"${currentFont}", monospace`, size: 64 },
     chars: charsets.SHAPE_ASCII,
   });
@@ -146,7 +146,7 @@ async function updateFont(fontFamily: string): Promise<void> {
   currentFont = fontFamily;
   await ensureFontLoaded(fontFamily);
 
-  alphabet = buildAlexHarriAlphabet({
+  alphabet = buildAlphabet({
     font: { family: `"${fontFamily}", monospace`, size: 64 },
     chars: charsets.SHAPE_ASCII,
   });
@@ -239,7 +239,7 @@ function processCurrentFrame(): void {
     color: params.useColor,
   };
 
-  const asciiFrame = alexHarriAlgorithm.convert(imageData, alphabet, options);
+  const asciiFrame = convert(imageData, alphabet, options);
   const t1 = performance.now();
 
   // Upload frame to GPU texture quad
