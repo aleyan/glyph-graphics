@@ -1,12 +1,9 @@
 # glyph-graphics
 
 Shape-aware image-to-ASCII conversion based on Alex Harri Jónsson's
-[Rendering ASCII in WebGL](https://alexharri.com/blog/ascii-rendering).
+[ASCII characters are not pixels: a deep dive into ASCII rendering](https://alexharri.com/blog/ascii-rendering).
 
-Instead of ranking glyphs by brightness alone, `glyph-graphics` compares the
-shape of each image cell with measured glyph shapes. Core conversion, JSONL
-video, and Three.js rendering are separate entrypoints, so applications only
-load the pieces they use.
+`glyph-graphics` converts images and video into ascii text, with optional colors.
 
 ## Install
 
@@ -16,7 +13,7 @@ bun add glyph-graphics
 
 ## Usage
 
-Load the font, measure an alphabet once, then reuse it for every frame:
+Load the font, measure an alphabet once, then reuse it for every image:
 
 ```ts
 import { buildAlphabet, charsets, convert, toText } from "glyph-graphics";
@@ -214,4 +211,4 @@ bun run demo
 
 The conversion method and sampling geometry are based on Alex Harri Jónsson's
 [Rendering ASCII in WebGL](https://alexharri.com/blog/ascii-rendering). This is
-an independent TypeScript implementation; see [LICENSE](LICENSE).
+an independent TypeScript implementation; see [MIT LICENSE](LICENSE).
