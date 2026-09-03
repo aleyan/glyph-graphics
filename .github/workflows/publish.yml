@@ -48,7 +48,3 @@ jobs:
 
       - name: Publish package
         run: npm publish --access public --provenance --ignore-scripts
-        env:
-          # Bootstrap fallback for the first publication. npm uses the GitHub
-          # OIDC identity first once a Trusted Publisher has been configured.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
